@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Interactive Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            /* Anti-cheat UI measure: disable user selection globally */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+        /* Allow selection only inside the code editor so they can type, but our JS will block copy/paste */
+        .code-input { 
+            font-family: 'Fira Code', 'Courier New', monospace; 
+            user-select: auto; 
+            -webkit-user-select: auto;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+        
+        .glow-active { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Content & Validation Helpers ---
+        // Generates valid variants of variable declarations
+        const d = (n, v) => [`let${n}=${v}`, `const${n}=${v}`, `var${n}=${v}`];
+        
+        const TOPICS = [
+            {
+                id: 'booleans', title: 'Booleans', 
+                start: new Date(2026, 10, 11, 0, 0, 0), end: new Date(2026, 10, 12, 23, 59, 59),
+                desc: "Learn how to make your code think with true/false logic.",
+                exp: "Booleans represent one of two values: true or false. They are the foundation of logic in programming, allowing your code to make decisions. When you compare values (like 5 > 3), the result is a boolean.",
+                qs: [
+                    { q: "Declare a variable `isTrue` and set it to `true`.", v: d('isTrue', 'true') },
+                    { q: "Declare a variable `isFalse` and set it to `false`.", v: d('isFalse', 'false') },
+                    { q: "Declare a variable `isGreater` and set it to the comparison of 5 > 3.", v: d('isGreater', '5>3') },
+                    { q: "Declare a variable `isEqual` and set it to the strict equality check of 10 and 10.", v: d('isEqual', '10===10') },
+                    { q: "Declare a variable `notEqual` and set it to the strict inequality check of 5 and 10.", v: d('notEqual', '5!==10') },
+                    { q: "Declare `logicalAnd` and set it to `true && true`.", v: d('logicalAnd', 'true&&true') },
+                    { q: "Declare `logicalOr` and set it to `false || true`.", v: d('logicalOr', 'false||true') },
+                    { q: "Declare `logicalNot` and set it to `!true`.", v: d('logicalNot', '!true') },
+                    { q: "Declare `typeCheck` and set it to `typeof true`.", v: d('typeCheck', 'typeoftrue') },
+                    { q: "Declare `strCompare` to strictly compare 'a' and 'a'.", v: d('strCompare', '"a"==="a"') }
+                ]
+            },
+            {
+                id: 'operators', title: 'Operators', 
+                start: new Date(2026, 10, 16, 0, 0, 0), end: new Date(2026, 10, 17, 23, 59, 59),
+                desc: "Calculate values and compare them using logical operators.",
+                exp: "Operators allow you to perform math (Arithmetic), assign values (Assignment), and compare data (Comparison). Using operators like +, -, *, /, and % allows complex calculations directly in code.",
+                qs: [
+                    { q: "Declare `sum` and set it to 5 + 10.", v: d('sum', '5+10') },
+                    { q: "Declare `diff` and set it to 20 - 5.", v: d('diff', '20-5') },
+                    { q: "Declare `prod` and set it to 4 * 5.", v: d('prod', '4*5') },
+                    { q: "Declare `div` and set it to 20 / 4.", v: d('div', '20/4') },
+                    { q: "Declare `mod` and set it to 10 % 3.", v: d('mod', '10%3') },
+                    { q: "Increment a variable `x` using the ++ operator (e.g. `x++;`).", v: ['x++'] },
+                    { q: "Decrement a variable `y` using the -- operator.", v: ['y--'] },
+                    { q: "Use the += operator to add 5 to an existing variable `z`.", v: ['z+=5'] },
+                    { q: "Use the -= operator to subtract 2 from an existing variable `w`.", v: ['w-=2'] },
+                    { q: "Declare `combined` as `(5 + 5) * 2`.", v: d('combined', '(5+5)*2') }
+                ]
+            },
+            {
+                id: 'strings', title: 'Strings', 
+                start: new Date(2026, 10, 18, 0, 0, 0), end: new Date(2026, 10, 19, 23, 59, 59),
+                desc: "Declare and manipulate string variables and concatenations.",
+                exp: "Strings are sequences of text. You can join them together (concatenation) using the + operator or template literals. Strings also come with built-in methods like .toUpperCase() or .length to manipulate text.",
+                qs: [
+                    { q: "Declare `msg` as the string 'Hello'.", v: d('msg', '"Hello"') },
+                    { q: "Declare `len` as the length of `msg`.", v: d('len', 'msg.length') },
+                    { q: "Declare `upper` as `msg.toUpperCase()`.", v: d('upper', 'msg.toUpperCase()') },
+                    { q: "Declare `lower` as `msg.toLowerCase()`.", v: d('lower', 'msg.toLowerCase()') },
+                    { q: "Declare `firstChar` as `msg.charAt(0)`.", v: d('firstChar', 'msg.charAt(0)') },
+                    { q: "Declare `greeting` by concatenating 'Hello' + ' World'.", v: d('greeting', '"Hello"+"World"') },
+                    { q: "Declare `temp` using a template literal for `Value is ${5}`.", v: d('temp', '"Valueis${5}"') },
+                    { q: "Declare `hasH` as `msg.includes('H')`.", v: d('hasH', 'msg.includes("H")') },
+                    { q: "Declare `sliced` as `msg.slice(0, 2)`.", v: d('sliced', 'msg.slice(0,2)') },
+                    { q: "Declare `replaced` as `msg.replace('H', 'Y')`.", v: d('replaced', 'msg.replace("H","Y")') }
+                ]
+            },
+            {
+                id: 'conditionals', title: 'Conditionals', 
+                start: new Date(2026, 10, 23, 0, 0, 0), end: new Date(2026, 10, 24, 23, 59, 59),
+                desc: "Use if and else statements to control program flow.",
+                exp: "Conditionals let your code make choices. An 'if' statement executes a block of code if a specified condition is true. If it is false, an 'else' block can be executed instead.",
+                qs: [
+                    { q: "Write an if statement testing `true` that assigns 1 to a new let variable `x`.", v: ['if(true){letx=1'] },
+                    { q: "Write an if(false) else statement that assigns 2 to a new let variable `y` in the else block.", v: ['else{lety=2'] },
+                    { q: "Write an if statement testing `x > 5` that assigns 3 to a new let variable `z`.", v: ['if(x>5){letz=3'] },
+                    { q: "Write an if / else if chain testing `x === 1` and `x === 2`.", v: ['if(x===1)','elseif(x===2)'] },
+                    { q: "Declare `tern` using a ternary operator: `5 > 3 ? 'yes' : 'no'`.", v: d('tern', '5>3?"yes":"no"') },
+                    { q: "Write an if statement testing `x !== null && x > 0`.", v: ['if(x!==null&&x>0)'] },
+                    { q: "Write an if statement testing `y || z`.", v: ['if(y||z)'] },
+                    { q: "Write a switch statement on `color` with a case for 'red' that breaks.", v: ['switch(color){case"red":break'] },
+                    { q: "Write a switch statement on `num` with a default case that breaks.", v: ['switch(num){default:break'] },
+                    { q: "Write an if statement testing `!isDone`.", v: ['if(!isDone)'] }
+                ]
+            },
+            {
+                id: 'functions_1', title: 'Functions I', 
+                start: new Date(2026, 10, 25, 0, 0, 0), end: new Date(2026, 10, 26, 23, 59, 59),
+                desc: "Introduction to function concepts, defining, and calling.",
+                exp: "Functions are reusable blocks of code. You define a function to perform a specific task, and then you can 'call' it whenever you need that task done. They can accept inputs (parameters) and return outputs.",
+                qs: [
+                    { q: "Write a function declaration `sayHi` with an empty body.", v: ['functionsayHi(){'] },
+                    { q: "Write a function `add` taking parameters `a` and `b`.", v: ['functionadd(a,b){'] },
+                    { q: "Write a function `getNum` that returns 5.", v: ['functiongetNum(){return5'] },
+                    { q: "Call the function `sayHi()`.", v: ['sayHi()'] },
+                    { q: "Declare `res` and set it to the result of `add(2, 3)`.", v: d('res', 'add(2,3)') },
+                    { q: "Declare `greet` as an anonymous function expression.", v: d('greet', 'function()') },
+                    { q: "Declare `arrFn` as an empty arrow function.", v: d('arrFn', '()=>') },
+                    { q: "Declare `mul` as an arrow function taking `x, y` and returning `x * y`.", v: d('mul', '(x,y)=>x*y') },
+                    { q: "Write a function `withDef` taking a parameter `name` with a default value of 'User'.", v: ['functionwithDef(name="User")'] },
+                    { q: "Write the statement `return true;`.", v: ['returntrue'] }
+                ]
+            },
+            {
+                id: 'arrays', title: 'Arrays', 
+                start: new Date(2026, 10, 30, 0, 0, 0), end: new Date(2026, 11, 1, 23, 59, 59),
+                desc: "Create, access, and modify arrays and their elements.",
+                exp: "Arrays are ordered lists of values. They are useful for storing multiple items in a single variable. You access items using a zero-based index (e.g. arr[0] is the first item).",
+                qs: [
+                    { q: "Declare `arr` as an array containing 1, 2, 3.", v: d('arr', '[1,2,3]') },
+                    { q: "Declare `first` as the 0th element of `arr`.", v: d('first', 'arr[0]') },
+                    { q: "Assign the value 5 to the 1st index of `arr`.", v: ['arr[1]=5'] },
+                    { q: "Declare `count` as the length property of `arr`.", v: d('count', 'arr.length') },
+                    { q: "Call the push method on `arr` with the value 4.", v: ['arr.push(4)'] },
+                    { q: "Call the pop method on `arr`.", v: ['arr.pop()'] },
+                    { q: "Call the shift method on `arr`.", v: ['arr.shift()'] },
+                    { q: "Call the unshift method on `arr` with the value 0.", v: ['arr.unshift(0)'] },
+                    { q: "Declare `idx` as `arr.indexOf(2)`.", v: d('idx', 'arr.indexOf(2)') },
+                    { q: "Declare `hasTwo` as `arr.includes(2)`.", v: d('hasTwo', 'arr.includes(2)') }
+                ]
+            },
+            {
+                id: 'objects', title: 'Objects', 
+                start: new Date(2026, 11, 2, 0, 0, 0), end: new Date(2026, 11, 3, 23, 59, 59),
+                desc: "Work with objects in JavaScript: access and modify properties.",
+                exp: "Objects are collections of key-value pairs. While arrays use numeric indices, objects use descriptive names (keys) to store properties. You can access properties using dot notation (obj.name) or bracket notation (obj['name']).",
+                qs: [
+                    { q: "Declare `obj` as an object with property `name` set to 'John'.", v: d('obj', '{name:"John"}') },
+                    { q: "Declare `n` as `obj.name`.", v: d('n', 'obj.name') },
+                    { q: "Declare `n2` as `obj['name']`.", v: d('n2', 'obj["name"]') },
+                    { q: "Assign 30 to `obj.age`.", v: ['obj.age=30'] },
+                    { q: "Assign 'red' to `obj['color']`.", v: ['obj["color"]="red"'] },
+                    { q: "Use the delete operator on `obj.age`.", v: ['deleteobj.age'] },
+                    { q: "Declare `hasProp` to check if 'name' is in `obj`.", v: d('hasProp', '"name"inobj') },
+                    { q: "Declare `k` as `Object.keys(obj)`.", v: d('k', 'Object.keys(obj)') },
+                    { q: "Declare `v` as `Object.values(obj)`.", v: d('v', 'Object.values(obj)') },
+                    { q: "Declare `p` as an object with a method `act: function() {}`.", v: d('p', '{act:function(){}}') }
+                ]
+            },
+            {
+                id: 'loops', title: 'Loops', 
+                start: new Date(2026, 11, 7, 0, 0, 0), end: new Date(2026, 11, 8, 23, 59, 59),
+                desc: "Master the basics of using for and while loops.",
+                exp: "Loops allow you to execute a block of code multiple times automatically. A 'for' loop runs a specific number of times, while a 'while' loop runs as long as a condition is true.",
+                qs: [
+                    { q: "Write a for loop initializing `i=0`, condition `i<5`, increment `i++`.", v: ['for(leti=0;i<5;i++)'] },
+                    { q: "Write a while loop with condition `i < 5`.", v: ['while(i<5)'] },
+                    { q: "Write a do...while loop with condition `j < 5`.", v: ['do{','}while(j<5)'] },
+                    { q: "Write an if statement inside a loop that calls `break` if `i === 5`.", v: ['if(i===5)break'] },
+                    { q: "Write an if statement inside a loop that calls `continue` if `i === 5`.", v: ['if(i===5)continue'] },
+                    { q: "Write a for...of loop using `let item of arr`.", v: ['for(letitemofarr)'] },
+                    { q: "Write a for...in loop using `let key in obj`.", v: ['for(letkeyinobj)'] },
+                    { q: "Write an infinite while loop `while(true)`.", v: ['while(true)'] },
+                    { q: "Write a for loop adding `i` to `sum`.", v: ['sum+=i'] },
+                    { q: "Write a while loop decrementing `c`.", v: ['c--'] }
+                ]
+            }
+        ];
+
+        // Format code for validation
+        const checkLogic = (code, matches) => {
+            if(!code) return false;
+            let clean = code.replace(/\s+/g, '').replace(/'/g, '"').replace(/`/g, '"');
+            return matches.some(m => {
+                let cleanM = m.replace(/\s+/g, '').replace(/'/g, '"').replace(/`/g, '"');
+                return clean.includes(cleanM);
+            });
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [progress, setProgress] = useState({});
+            const [view, setView] = useState('login'); // login, dashboard
+            const [activeTopic, setActiveTopic] = useState(null);
+
+            const NOW = new Date(); // Current date strictly evaluated
+
+            // Anti-cheat measures
+            useEffect(() => {
+                const preventAction = (e) => e.preventDefault();
+                const preventKeys = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
+                        e.preventDefault();
+                    }
+                };
+
+                // Prevent right click and keyboard shortcuts globally
+                document.addEventListener('contextmenu', preventAction);
+                document.addEventListener('keydown', preventKeys);
+
+                return () => {
+                    document.removeEventListener('contextmenu', preventAction);
+                    document.removeEventListener('keydown', preventKeys);
+                };
+            }, []);
+
+            const getTopicStatus = (t) => {
+                if (NOW < t.start) return 'locked';
+                if (NOW > t.end) return 'closed';
+                return 'open';
+            };
+
+            const formatDate = (date) => {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            };
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const idNumber = e.target.idNumber.value.trim();
+                const labSection = e.target.labSection.value.trim();
+
+                if (!idNumber || !labSection) return;
+
+                const loggedUser = { idNumber, labSection };
+                setUser(loggedUser);
+                
+                // Load offline progress from LocalStorage using ID and Section as a unique key
+                const storageKey = `jslab_${idNumber}_${labSection}`;
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    setProgress(JSON.parse(saved));
+                }
+                
+                setView('dashboard');
+            };
+
+            const updateProgress = (topicId, activityIndex) => {
+                setProgress(prev => {
+                    const nextProg = {
+                        ...prev,
+                        [topicId]: {
+                            ...(prev[topicId] || {}),
+                            [activityIndex]: true
+                        }
+                    };
+                    // Save to local storage synchronously
+                    const storageKey = `jslab_${user.idNumber}_${user.labSection}`;
+                    localStorage.setItem(storageKey, JSON.stringify(nextProg));
+                    return nextProg;
+                });
+            };
+
+            if (view === 'login') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                        <div className="bg-slate-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
+                            <h1 className="text-2xl font-bold mb-2 text-blue-400 text-center">Interactive JS Lab</h1>
+                            <p className="text-slate-400 text-center mb-6 text-sm">Please enter your credentials. Progress is saved locally.</p>
+                            
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm text-slate-300 mb-1">ID Number</label>
+                                    <input type="text" name="idNumber" placeholder="e.g. 2026-12345" className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-blue-500 outline-none" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-300 mb-1">Laboratory Section</label>
+                                    <input type="text" name="labSection" placeholder="e.g. IT-3A" className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-blue-500 outline-none" required />
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-blue-500/20">
+                                    Access Laboratory
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* Sidebar */}
+                    <div className="w-72 bg-slate-800 border-r border-slate-700 flex flex-col hidden md:flex">
+                        <div className="p-6 border-b border-slate-700">
+                            <h2 className="text-lg font-bold text-blue-400">JS Syllabus 2026</h2>
+                            <p className="text-xs text-slate-400 mt-1">Student ID: {user?.idNumber}</p>
+                            <p className="text-xs text-slate-400">Lab Section: {user?.labSection}</p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
+                            {TOPICS.map((t, idx) => {
+                                const status = getTopicStatus(t);
+                                const isCompleted = progress[t.id] && Object.keys(progress[t.id]).length === 10;
+                                
+                                return (
+                                    <div 
+                                        key={t.id} 
+                                        onClick={() => status !== 'locked' ? setActiveTopic(t.id) : null}
+                                        className={`p-4 rounded-lg border cursor-pointer transition-all duration-300 
+                                            ${status === 'locked' ? 'opacity-50 border-slate-700 bg-slate-800/50 cursor-not-allowed' : 
+                                              status === 'open' ? 'border-blue-500 bg-slate-800 glow-active' : 
+                                              'border-slate-600 bg-slate-800 hover:border-slate-500'} 
+                                            ${activeTopic === t.id ? 'ring-2 ring-blue-500 bg-slate-700' : ''}`}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-semibold">{idx + 1}. {t.title}</span>
+                                            {status === 'locked' && <i className="fas fa-lock text-slate-500 text-xs"></i>}
+                                            {status === 'open' && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+                                            {status === 'closed' && isCompleted && <i className="fas fa-check-circle text-green-500"></i>}
+                                        </div>
+                                        <p className="text-xs text-slate-400">
+                                            {status === 'locked' ? `Opens ${formatDate(t.start)}` : 
+                                             status === 'open' ? `Closes ${formatDate(t.end)}` : 'Closed'}
+                                        </p>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 bg-slate-900 overflow-y-auto custom-scrollbar">
+                        {!activeTopic ? (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                                <i className="fas fa-laptop-code text-6xl mb-6 text-slate-600"></i>
+                                <h2 className="text-2xl font-bold text-slate-300 mb-2">Welcome to the JS Laboratory</h2>
+                                <p className="max-w-md">Select an open topic from the sidebar to begin your activities. Future topics are locked until their scheduled date.</p>
+                                <p className="text-xs mt-4 text-slate-500">Current System Date: {NOW.toDateString()}</p>
+                            </div>
+                        ) : (
+                            <TopicView 
+                                topic={TOPICS.find(t => t.id === activeTopic)} 
+                                status={getTopicStatus(TOPICS.find(t => t.id === activeTopic))}
+                                progress={progress[activeTopic] || {}}
+                                updateProgress={updateProgress}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const TopicView = ({ topic, status, progress, updateProgress }) => {
+            const completedCount = Object.keys(progress).length;
+
+            return (
+                <div className="max-w-4xl mx-auto p-6 md:p-10 pb-20">
+                    <div className="mb-8 border-b border-slate-700 pb-8">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h1 className="text-3xl font-bold text-white mb-2">{topic.title}</h1>
+                                <p className="text-blue-400">{topic.desc}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider
+                                    ${status === 'open' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-slate-700 text-slate-300'}`}>
+                                    {status}
+                                </span>
+                                <div className="text-sm mt-2 text-slate-400">
+                                    {completedCount} / 10 Completed
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-slate-800/80 rounded-xl p-6 text-slate-300 leading-relaxed border border-slate-700">
+                            <h3 className="text-lg font-semibold text-white mb-2"><i className="fas fa-book-open mr-2 text-blue-500"></i> Explanation</h3>
+                            {topic.exp}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {topic.qs.map((q, idx) => (
+                            <ActivityCard 
+                                key={idx} 
+                                index={idx} 
+                                activity={q} 
+                                topicId={topic.id}
+                                isCompleted={!!progress[idx]}
+                                isReadOnly={status === 'closed'}
+                                updateProgress={updateProgress}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ActivityCard = ({ index, activity, topicId, isCompleted, isReadOnly, updateProgress }) => {
+            const [code, setCode] = useState("");
+            const [error, setError] = useState("");
+
+            const handlePrevent = (e) => {
+                e.preventDefault();
+            };
+
+            const handleRun = () => {
+                if (isReadOnly || isCompleted) return;
+                
+                if (checkLogic(code, activity.v)) {
+                    setError("");
+                    updateProgress(topicId, index);
+                } else {
+                    setError("Syntax or logic mismatch. Please review the instructions carefully.");
+                }
+            };
+
+            return (
+                <div className={`bg-slate-800 rounded-xl overflow-hidden border ${isCompleted ? 'border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'border-slate-700'}`}>
+                    <div className="p-5">
+                        <div className="flex items-start justify-between">
+                            <div className="text-slate-200">
+                                <span className="font-bold text-slate-400 mr-2">#{index + 1}</span>
+                                {activity.q}
+                            </div>
+                            {isCompleted && <i className="fas fa-check-circle text-green-500 text-xl ml-4"></i>}
+                        </div>
+                        
+                        {!isCompleted && (
+                            <div className="mt-4">
+                                <textarea 
+                                    className="code-input w-full bg-slate-900 border border-slate-600 rounded-lg p-4 text-green-400 text-sm focus:border-blue-500 outline-none"
+                                    rows="2" 
+                                    placeholder="// Write your code here..."
+                                    spellCheck={false}
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    onCopy={handlePrevent}
+                                    onPaste={handlePrevent}
+                                    onCut={handlePrevent}
+                                    disabled={isReadOnly}
+                                ></textarea>
+                                
+                                <div className="flex items-center justify-between mt-3">
+                                    <div className="text-red-400 text-sm font-semibold">{error}</div>
+                                    <button 
+                                        onClick={handleRun}
+                                        disabled={isReadOnly || !code.trim()}
+                                        className={`px-6 py-2 rounded font-bold transition-colors ${
+                                            isReadOnly 
+                                            ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
+                                            : 'bg-blue-600 hover:bg-blue-500 text-white'
+                                        }`}
+                                    >
+                                        <i className="fas fa-play mr-2"></i> Submit Code
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {isCompleted && (
+                            <div className="mt-4 bg-slate-900/50 p-4 rounded border border-green-500/20 text-green-400 font-mono text-sm opacity-75 code-input">
+                                /* Code successfully submitted */
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
